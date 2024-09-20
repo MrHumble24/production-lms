@@ -1,0 +1,543 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------ People ------------------------------------------
+
+model Admin {
+  id        Int     @id @default(autoincrement())
+  firstName String
+  lastName  String
+  email     String  @unique
+  phone     String? @unique
+
+  avatar           String?
+  password         String?
+  telegramUsername String?
+  isDeleted        Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now())
+  role             Role     @default(ADMIN)
+  branchId         Int?
+  branch           Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
+}
+
+model CompanyOwner {
+  id               Int      @id @default(autoincrement())
+  firstName        String
+  lastName         String
+  email            String   @unique
+  phone            String?  @unique
+  avatar           String?
+  password         String?
+  telegramUsername String?
+  isDeleted        Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now())
+  role             Role     @default(COMPANY_OWNER)
+  tenantId         Int?
+  tenant           Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+}
+
+model Teacher {
+  id               Int      @id @default(autoincrement())
+  firstName        String
+  lastName         String
+  email            String   @unique
+  phone            String?  @unique
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now())
+  officeHours      String?
+  bio              String?
+  title            String?
+  avatar           String?
+  password         String?
+  gender           Gender?  @default(PREFER_NOT_TO_SAY)
+  isDeleted        Boolean  @default(false)
+  telegramUsername String?
+  role             Role     @default(TEACHER)
+  share            Float    @default(0.35)
+
+  // Relations
+  groups            Group[]
+  timetables        Timetable[] // One-to-many with Timetable
+  subjects          Subject[]           @relation("TeacherSubjects") // Many-to-many with Subject
+  Attendance        Attendance[] // One-to-many with Attendance
+  branchId          Int? // Nullable because a teacher may not belong to any branch
+  branch            Branch?             @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  Task              Task[]
+  TeacherPayment    TeacherPayment[]
+  GroupNotification GroupNotification[]
+  GroupMaterial     GroupMaterial[]
+}
+
+model Student {
+  id               Int      @id @default(autoincrement())
+  firstName        String
+  lastName         String
+  email            String   @unique
+  phone            String?  @unique
+  enrollmentDate   DateTime @default(now())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now())
+  avatar           String?
+  password         String?
+  gender           Gender?  @default(PREFER_NOT_TO_SAY)
+  bio              String?
+  telegramUsername String?
+  role             Role     @default(STUDENT)
+  isDeleted        Boolean  @default(false)
+  balance          Float    @default(0)
+  prepaidBalance   Float    @default(0) // This field tracks prepaid balance
+
+  // Relations
+  groups         Group[]          @relation("StudentGroups")
+  attendances    Attendance[]
+  branchId       Int?
+  branch         Branch?          @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  Submission     Submission[]
+  StudentPayment StudentPayment[]
+}
+
+model Accountant {
+  id        Int     @id @default(autoincrement())
+  firstName String
+  lastName  String
+  email     String  @unique
+  phone     String? @unique
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now())
+  avatar           String?
+  password         String?
+  gender           Gender?  @default(PREFER_NOT_TO_SAY)
+  bio              String?
+  telegramUsername String?
+  role             Role     @default(STUDENT)
+
+  // Relations
+
+  branchId       Int?
+  branch         Branch?          @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  StudentPayment StudentPayment[]
+  TeacherPayment TeacherPayment[]
+}
+
+model Lead {
+  id           Int        @id @default(autoincrement())
+  firstName    String
+  lastName     String
+  email        String     @unique
+  phone        String?
+  interestedIn String?
+  status       LeadStatus @default(NEWS)
+  source       LeadSource @default(WEBSITE)
+
+  followUpDate DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  notes        String?
+  branchId     Int?
+  branch       Branch?   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+}
+
+// Enums for Lead model
+enum LeadStatus {
+  NEWS
+  CONTACTED
+  QUALIFIED
+  CONVERTED
+  DISQUALIFIED
+  FOLLOWUP
+}
+
+enum LeadSource {
+  WEBSITE
+  REFERRAL
+  EMAIL
+  SOCIAL_MEDIA
+  ADVERTISEMENT
+  OTHER
+  WALK_IN
+}
+
+// ---------------------------------------------- Groups ----------------------------------------------
+
+model Group {
+  id          Int           @id @default(autoincrement())
+  name        String
+  capacity    Int
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @default(now())
+  isDeleted   Boolean       @default(false)
+  progress    GroupProgress @default(NOT_STARTED)
+  description String?
+  days        Days?         @default(EVERY_DAY)
+  price       Float?        @default(0)
+  // Relations
+  teacherId   Int? // Nullable because teacherId can be set to null
+  teacher     Teacher?      @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  subjectId   Int?
+  level       GroupLevel?   @default(BEGINNER)
+  subject     Subject?      @relation(fields: [subjectId], references: [id])
+  students    Student[]     @relation("StudentGroups")
+  timetables  Timetable[] // Cascading delete when Group is deleted
+  Attendance  Attendance[]
+  branchId    Int?
+  branch      Branch?       @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  tasks       Task[] // One-to-many with Task
+
+  GroupNotification GroupNotification[]
+  GroupMaterial     GroupMaterial[]
+  StudentPayment    StudentPayment[]
+  TeacherPayment    TeacherPayment[]
+}
+
+model Task {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  priority    priority @default(MEDIUM)
+  dueDate     DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+  maxScore    Int?     @default(100)
+  isDeleted   Boolean  @default(false)
+  minScore    Int?     @default(30)
+  attachments String[]
+
+  // Relations
+  groupId  Int
+  group    Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  branchId Int
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  Submission Submission[]
+  Teacher    Teacher?     @relation(fields: [teacherId], references: [id])
+  teacherId  Int?
+}
+
+model GroupNotification {
+  id          Int                @id @default(autoincrement())
+  title       String
+  description String?
+  priority    priority           @default(MEDIUM)
+  type        notificationType   @default(ANNOUNCEMENT)
+  status      notificationStatus @default(UNREAD)
+  attachments String[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @default(now())
+  isDeleted   Boolean            @default(false)
+  groupId     Int
+  group       Group              @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  branchId    Int
+  branch      Branch             @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  teacherId Int?
+  teacher   Teacher? @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+}
+
+model GroupMaterial {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  attachments String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+  isDeleted   Boolean  @default(false)
+  branchId    Int
+  branch      Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  groupId     Int
+  group       Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  teacherId   Int
+  teacher     Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+}
+
+// ---------------------------------------------- Payments --------------------------------------------
+
+model StudentPayment {
+  id          Int           @id @default(autoincrement())
+  amount      Float         @default(0)
+  paymentDate DateTime      @default(now())
+  dueDate     DateTime
+  method      PaymentMethod @default(CASH)
+  status      PaymentStatus @default(NOT_PAID)
+  description String?
+  currency    Curreny?      @default(UZS)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @default(now())
+
+  // Relations
+  paidById Int? // Make this optional (nullable) by adding ?
+  paidBy   Accountant? @relation(fields: [paidById], references: [id])
+
+  studentId Int
+  student   Student @relation(fields: [studentId], references: [id])
+  branchId  Int?
+  branch    Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  groupId   Int
+  group     Group   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
+
+model TeacherPayment {
+  id          Int            @id @default(autoincrement())
+  amount      Float          @default(0)
+  paymentDate DateTime       @default(now())
+  dueDate     DateTime? // Nullable for suggested payments
+  method      PaymentMethod? @default(CASH) // Nullable for suggested payments
+  status      PaymentStatus  @default(PENDING) // Default status is PENDING for suggestions
+  description String?
+  currency    Curreny?       @default(UZS)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @default(now())
+
+  // Relations
+  paidById  Int? // Nullable for suggested payments
+  paidBy    Accountant? @relation(fields: [paidById], references: [id], onDelete: Cascade)
+  teacherId Int // Necessary to link the payment to the teacher
+  teacher   Teacher     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  groupId   Int // Now make this required
+  group     Group       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  branchId  Int?
+  branch    Branch?     @relation(fields: [branchId], references: [id], onDelete: SetNull)
+}
+
+// ---------------------------------------------- other models --------------------------------------------
+
+model Submission {
+  id          Int      @id @default(autoincrement())
+  taskId      Int
+  studentId   Int
+  submittedAt DateTime @default(now())
+  content     String?
+  grade       Int?
+  feedback    String?
+
+  // Relations
+  task    Task    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, studentId]) // Ensures each student can only submit once per task
+}
+
+model Subject {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  groups   Group[]
+  teachers Teacher[] @relation("TeacherSubjects")
+  branchId Int?
+  branch   Branch?   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+}
+
+model Room {
+  id         Int         @id @default(autoincrement())
+  number     String      @unique
+  capacity   Int
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @default(now())
+  branchId   Int?
+  branch     Branch?     @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  // Relations
+  timetables Timetable[]
+}
+
+model Timetable {
+  id        Int      @id @default(autoincrement())
+  day       String
+  startTime String
+  endTime   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  isDeleted Boolean  @default(false)
+
+  // Relations
+  groupId    Int
+  group      Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  roomId     Int?
+  room       Room?        @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  teacherId  Int?
+  teacher    Teacher?     @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  Attendance Attendance[]
+  branchId   Int?
+  branch     Branch?      @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([day, startTime, roomId])
+}
+
+model Attendance {
+  id          Int              @id @default(autoincrement())
+  studentId   Int
+  groupId     Int
+  timetableId Int
+  status      AttendanceStatus
+  date        DateTime         @default(now())
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @default(now())
+  isExcused   Boolean          @default(false)
+  reason      String?
+  markedById  Int?
+  branchId    Int?
+
+  student   Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  group     Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  timetable Timetable @relation(fields: [timetableId], references: [id], onDelete: Cascade)
+  markedBy  Teacher?  @relation(fields: [markedById], references: [id], onDelete: Cascade)
+  branch    Branch?   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+}
+
+model Tenant {
+  id           Int            @id @default(autoincrement())
+  name         String
+  description  String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @default(now())
+  isDeleted    Boolean        @default(false)
+  logo         String?
+  website      String?
+  email        String?
+  phone        String?
+  address      String?
+  location     String?
+  socialMedia  SocialMedia[]
+  branches     Branch[]
+  CompanyOwner CompanyOwner[]
+}
+
+model Branch {
+  id                Int                 @id @default(autoincrement())
+  name              String
+  description       String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @default(now())
+  isDeleted         Boolean             @default(false)
+  tenantId          Int
+  address           String?
+  phone             String?
+  email             String?
+  website           String?
+  location          String?
+  tenant            Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  teachers          Teacher[]
+  students          Student[]
+  admins            Admin[]
+  groups            Group[]
+  attendances       Attendance[]
+  Room              Room[]
+  Subject           Subject[]
+  Timetable         Timetable[]
+  Task              Task[]
+  GroupNotification GroupNotification[]
+  GroupMaterial     GroupMaterial[]
+  StudentPayment    StudentPayment[]
+  TeacherPayment    TeacherPayment[]
+  Accountant        Accountant[]
+  Lead              Lead[]
+}
+
+model SocialMedia {
+  id        Int      @id @default(autoincrement())
+  name      String
+  url       String
+  tenantId  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  isDeleted Boolean  @default(false)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+// ---------------------------------------------- ENUMERATIONS ----------------------------------------------
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum notificationType {
+  ANNOUNCEMENT
+  REMINDER
+  ALERT
+  EVENT
+}
+
+enum notificationStatus {
+  UNREAD
+  READ
+  ARCHIVED
+  SENT
+}
+
+enum priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum GroupLevel {
+  BEGINNER
+  ELEMENTARY
+  INTERMEDIATE
+  ADVANCED
+  BOOSTED
+}
+
+enum GroupProgress {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  ABANDONED
+  SUSPENDED
+  ARCHIVED
+  DELETED
+}
+
+enum Curreny {
+  UZS
+  USD
+  EUR
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  PREFER_NOT_TO_SAY
+}
+
+enum Days {
+  EVEN_DAYS
+  ODD_DAYS
+  EVERY_DAY
+}
+
+enum Role {
+  TEACHER
+  ADMIN
+  COMPANY_OWNER
+  STUDENT
+  ACCOUNTANT
+}
+
+enum PaymentMethod {
+  BANK_TRANSFER
+  ONLINE_TRANSFER
+  CASH
+  OTHER
+}
+
+enum PaymentStatus {
+  PAID
+  PARTIALLY_PAID
+  NOT_PAID
+  PENDING
+}
