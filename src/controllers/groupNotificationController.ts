@@ -87,7 +87,11 @@ export const updateGroupNotificationController = async (
   try {
     const { id } = req.params;
     const data = req.body;
-    const updatedNotification = await updateGroupNotification(Number(id), data);
+    const updatedNotification = await updateGroupNotification(
+      Number(id),
+      data,
+      req.files
+    );
     res.status(200).json(updatedNotification);
   } catch (error) {
     res.status(500).json({ error: "Failed to update group notification" });

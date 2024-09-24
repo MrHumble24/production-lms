@@ -79,11 +79,25 @@ export const updateGroupNotification = async (
     status?: "UNREAD" | "READ" | "SENT" | "ARCHIVED";
     attachment?: string;
     isDeleted?: boolean;
-  }
+    groupId?: string;
+    branchId?: boolean;
+  },
+  attachments: any
 ) => {
+  let files = [];
+  for (const attachment of attachments) {
+    const data = await uploadImageToSupabase(attachment, "attachments");
+    files.push(data);
+  }
+  console.log(data);
   return prisma.groupNotification.update({
     where: { id },
-    data,
+    data: {
+      ...data,
+      groupId: Number(data.groupId),
+      branchId: Number(data.branchId),
+      attachments: files,
+    },
   });
 };
 
