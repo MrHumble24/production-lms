@@ -49,6 +49,7 @@ router.get(
 router.patch(
   "/:id",
   authorizeRoles(["COMPANY_OWNER", "ADMIN", "TEACHER"]),
+  upload.array("attachments", 10),
   taskController.updateTask
 );
 

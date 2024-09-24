@@ -1,6 +1,6 @@
 // src/controllers/taskController.ts
 
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import * as taskService from "../services/taskService";
 
 /**
@@ -43,15 +43,20 @@ export const getTaskById = async (req: Request, res: Response) => {
 /**
  * Controller to update a task by ID
  */
-export const updateTask = async (req: Request, res: Response) => {
+export const updateTask = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const updatedTask = await taskService.updateTask(
       Number(req.params.id),
-      req.body
+      req.body,
+      req.files
     );
     res.status(200).json(updatedTask);
-  } catch (error) {
-    res.status(400).json({ error: error });
+  } catch (error: any) {
+    next(error);
   }
 };
 

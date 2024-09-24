@@ -1,3 +1,4 @@
+import { Request } from "express";
 import uploadImageToSupabase from "../helpers/uploadImage";
 import prisma from "../prisma/client";
 
@@ -93,15 +94,32 @@ export const getTaskById = async (id: number) => {
 /**
  * Update a task by ID
  */
-export const updateTask = async (id: number, taskData: any) => {
+export const updateTask = async (
+  id: number,
+  taskData: any,
+  attachments: any
+) => {
   try {
+    let files = [];
+    for (const attachment of attachments) {
+      const data = await uploadImageToSupabase(attachment, "attachments");
+      files.push(data);
+    }
     const updatedTask = await prisma.task.update({
       where: { id },
-      data: taskData,
+      data: {
+        ...taskData,
+        teacherId: Number(taskData.teacherId),
+        groupId: Number(taskData.groupId),
+        attachments: files,
+        maxScore: Number(taskData.maxScore),
+        minScore: Number(taskData.minScore),
+        branchId: Number(taskData.branchId),
+      },
     });
     return updatedTask;
-  } catch (error) {
-    console.log(error);
+  } catch (error: any) {
+    console.log(error.message);
     throw new Error(`Unable to update task: ${error}`);
   }
 };

@@ -31,7 +31,7 @@ import branchRoutes from "./routes/branchRoutes";
 
 const app = express();
 app.use(cors({}));
-app.use(morgan("short"));
+app.use(morgan("dev"));
 
 app.use(express.json());
 dotenv.config();
