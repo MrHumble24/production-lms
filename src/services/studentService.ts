@@ -1,4 +1,4 @@
-import { Student, Timetable } from "@prisma/client";
+import { Gender, Prisma, Student, Timetable } from "@prisma/client";
 import deleteImageFromSupabase from "../helpers/removeImage";
 import uploadImageToSupabase from "../helpers/uploadImage";
 import prisma from "../prisma/client";
@@ -161,6 +161,83 @@ export const updateStudentService = async (
   return prisma.student.findUnique({
     where: { id },
   }) as Promise<Student>;
+};
+
+interface UpdateStudentData {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  avatar?: string;
+  bio?: string;
+  gender?: Gender;
+  telegramUsername?: string;
+}
+/**
+ * Updates a student's information by ID and handles timetable conflicts.
+ * @param id - The ID of the student to update.
+ * @param data - The updated student data.
+ * @returns A promise that resolves to the updated Student object.
+ */
+export const updateStudentPersonalData = async (
+  id: number,
+  data: UpdateStudentData
+) => {
+  const {
+    firstName,
+    lastName,
+    email,
+    phone,
+    avatar,
+    bio,
+    gender,
+    telegramUsername,
+  } = data;
+
+  // Fetch the current student data, including related groups
+  const existingStudent = await prisma.student.findUnique({
+    where: { id },
+    include: { groups: true, attendances: true, Submission: true },
+  });
+
+  if (!existingStudent) {
+    throw new Error("Student not found");
+  }
+
+  // Prepare the data for updating, excluding groups
+  const updateData: Partial<UpdateStudentData> = {
+    firstName,
+    lastName,
+    email,
+    phone,
+    avatar,
+    bio,
+    gender,
+    telegramUsername,
+  };
+
+  // Update the student, while preserving the groups
+  const updatedStudent = await prisma.student.update({
+    where: { id },
+    data: {
+      ...updateData,
+      groups: {
+        set: existingStudent.groups.map((group) => ({ id: group.id })), // Preserve existing groups
+      },
+      Submission: {
+        set: existingStudent.Submission.map((submission) => ({
+          id: submission.id,
+        })),
+      },
+      attendances: {
+        set: existingStudent.attendances.map((attendance) => ({
+          id: attendance.id,
+        })),
+      },
+    },
+  });
+
+  return updatedStudent;
 };
 
 /**

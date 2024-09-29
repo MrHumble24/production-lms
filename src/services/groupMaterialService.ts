@@ -2,6 +2,7 @@
 
 import { PrismaClient } from "@prisma/client";
 import uploadImageToSupabase from "../helpers/uploadImage";
+import { Request } from "express";
 const prisma = new PrismaClient();
 
 export const createGroupMaterial = async (
@@ -48,19 +49,36 @@ export const getGroupMaterialById = async (id: number) => {
 };
 
 export const updateGroupMaterial = async (
-  id: number,
   data: {
-    title?: string;
+    id: string;
+    title: string;
     description?: string;
     attachment?: string;
-  }
+    groupId: number;
+    branchId: number;
+    teacherId: number;
+  },
+  req: any
 ) => {
+  const { branchId, groupId, title, description, teacherId } = data;
+  let files = [];
+  for (const attachment of req.files) {
+    const data = await uploadImageToSupabase(attachment, "attachments");
+    files.push(data);
+  }
+  console.log(data);
   return prisma.groupMaterial.update({
-    where: { id },
-    data,
+    where: {
+      id: Number(data.id),
+    },
+    data: {
+      groupId: Number(groupId),
+      title,
+      description,
+      attachments: files,
+    },
   });
 };
-
 export const deleteGroupMaterial = async (id: number) => {
   return prisma.groupMaterial.update({
     where: { id },

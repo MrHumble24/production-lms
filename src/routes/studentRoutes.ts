@@ -10,6 +10,7 @@ import {
   removeStudentFromGroupHandler,
   updateStudent,
   updateStudentImage,
+  updateStudentProfileController,
 } from "../controllers/studentController";
 import { authorizeRoles } from "../middleware/roleMiddleware";
 import { ensureOwnership } from "../middleware/ownershipMiddleware"; // Corrected ownership middleware
@@ -59,11 +60,22 @@ router.post(
  * @desc    Update details of a student
  * @access  COMPANY_OWNER, ADMIN, STUDENT
  */
-router.put(
+router.patch(
   "/:id",
   authorizeRoles(["COMPANY_OWNER", "ADMIN", "STUDENT"]),
   ensureOwnership("STUDENT"), // Ensure the student can only update their own profile
   updateStudent
+);
+
+/**
+ * @route   PUT /students/:id
+ * @desc    Update details of a student
+ * @access  COMPANY_OWNER, ADMIN, STUDENT
+ */
+router.put(
+  "/:id/profile",
+  authorizeRoles(["COMPANY_OWNER", "ADMIN", "STUDENT"]),
+  updateStudentProfileController
 );
 
 /**
@@ -120,7 +132,7 @@ router.post(
  */
 router.get(
   "/:id/groups",
-  authorizeRoles(["COMPANY_OWNER", "ADMIN", "STUDENT"]),
+  authorizeRoles(["COMPANY_OWNER", "ADMIN", "STUDENT", "TEACHER"]),
   ensureOwnership("STUDENT"), // Ensure the student can only view their own groups
   getStudentGroupsHandler
 );

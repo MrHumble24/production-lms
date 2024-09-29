@@ -8,6 +8,7 @@ class LeadController {
       const lead = await LeadService.createLead(req.body);
       res.status(201).json(lead);
     } catch (error) {
+      console.log(error);
       res.status(500).json({ error: "Failed to create lead", details: error });
     }
   }

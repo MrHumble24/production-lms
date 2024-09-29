@@ -31,7 +31,6 @@ router.get(
 router.get(
   "/:teacherId/history",
   authorizeRoles(["COMPANY_OWNER", "ADMIN", "TEACHER"]),
-  ensureOwnership("TEACHER"), // Ensure teachers can only view their own payment history
   getTeacherPaymentHistoryController
 );
 

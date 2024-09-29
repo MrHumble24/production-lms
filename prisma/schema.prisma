@@ -317,6 +317,7 @@ model Submission {
   content     String?
   grade       Int?
   feedback    String?
+  fileUrl     String?
 
   // Relations
   task    Task    @relation(fields: [taskId], references: [id], onDelete: Cascade)

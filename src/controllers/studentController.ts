@@ -11,6 +11,7 @@ import {
   getStudentGroups,
   removeStudentFromGroup,
   updateStudentImageService,
+  updateStudentPersonalData,
   updateStudentService,
 } from "../services/studentService";
 
@@ -100,11 +101,29 @@ export const updateStudent = async (
     const updatedStudent = await updateStudentService(Number(id), req.body);
     res.status(200).json(updatedStudent);
   } catch (error) {
-    console.log({ aaa: error });
     next(error);
   }
 };
+export const updateStudentProfileController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const updateData = req.body;
+    const { id } = req.params;
 
+    // Call the service function to update the student's personal details
+    const updatedStudent = await updateStudentPersonalData(
+      Number(id),
+      updateData
+    );
+
+    return res.status(200).json(updatedStudent);
+  } catch (error) {
+    next(error);
+  }
+};
 export const updateStudentImage = async (req: Request, res: Response) => {
   try {
     const student = await updateStudentImageService(

@@ -1,6 +1,6 @@
 // controllers/groupMaterialController.ts
 
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import {
   createGroupMaterial,
   getGroupMaterials,
@@ -59,9 +59,11 @@ export const updateGroupMaterialController = async (
   try {
     const { id } = req.params;
     const data = req.body;
-    const updatedMaterial = await updateGroupMaterial(Number(id), data);
+
+    const updatedMaterial = await updateGroupMaterial({ ...data, id }, req);
     res.status(200).json(updatedMaterial);
   } catch (error) {
+    console.log(error);
     res.status(500).json({ error: "Failed to update group material" });
   }
 };

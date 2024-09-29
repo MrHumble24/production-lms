@@ -24,10 +24,12 @@ import teacherRoutes from "./routes/teacherRoutes";
 import tenantRoutes from "./routes/tenantRoutes";
 import timetableRoutes from "./routes/timetableRoutes";
 import paymentRoutes from "./routes/paymentsRoutes";
+import submissionRoutes from "./routes/submissionRoutes";
 
 // middleware imports
 import { errorHandlerMiddleware } from "./middleware/errorHandler";
 import branchRoutes from "./routes/branchRoutes";
+import { backupPostgres } from "./jobs/backupPostgres";
 
 const app = express();
 app.use(cors({}));
@@ -48,6 +50,7 @@ app.use("/api/timetables", timetableRoutes);
 app.use("/api/attendances", attendanceRoutes);
 app.use("/api/subjects", subjectRoutes);
 app.use("/api/stats", statsRoutes);
+app.use("/api/submissions", submissionRoutes);
 app.use("/api/companyOwners", companyOwnerRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/groupNotifications", groupNotificationRoutes);
