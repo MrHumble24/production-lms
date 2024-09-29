@@ -63,7 +63,7 @@ router.post(
  */
 router.get(
   "/detail/:paymentId",
-  authorizeRoles(["COMPANY_OWNER", "ADMIN", "ACCOUNTANT"]),
+  authorizeRoles(["COMPANY_OWNER", "ADMIN", "ACCOUNTANT", "TEACHER"]),
   getTeacherPaymentDetailController
 );
 
